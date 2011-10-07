@@ -1,5 +1,6 @@
 package Tie::CHI;
 use CHI;
+use Scalar::Util qw(blessed);
 use strict;
 use warnings;
 
