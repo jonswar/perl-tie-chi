@@ -78,36 +78,49 @@ Tie::CHI - Tied hash to persistent CHI cache
 
     my %cache;
 
-    # Choose a driver and options
+    # Pass CHI options to tie
     #
     tie %cache, 'Tie::CHI', { driver => 'File', root_dir => '/path/to/root' };
-    tie %cache, 'Tie::CHI', {
-        namespace => 'homepage',
-        driver  => 'Memcached::libmemcached',
-        servers => [ "10.0.0.15:11211", "10.0.0.15:11212" ],
+    tie %cache, 'Tie::CHI',
+      {
+        driver             => 'Memcached::libmemcached',
+        namespace          => 'homepage',
+        servers            => [ "10.0.0.15:11211", "10.0.0.15:11212" ],
         default_expires_in => '10 min'
-    );
+      } );
 
-    # Cache operations
+    # or pass an existing CHI object
+    #
+    my $chi_object = CHI->new(...);
+    tie %cache, 'Tie::CHI', $chi_object;
+
+    # Perform cache operations
     #
     my $customer = $cache{$name};
     if ( !defined $customer ) {
-        $customer = get_customer_from_db($name);
-        $cache{$name} = $customer;
+          $customer = get_customer_from_db($name);
+          $cache{$name} = $customer;
     }
-    ...
-    delete($cache{$name});
+    delete( $cache{$name} );
+
+    # Break the binding
+    #
+    untie(%cache);
 
 =head1 DESCRIPTION
 
 Tie::CHI implements a tied hash connected to a L<CHI|CHI> cache. It can be used
 with any of CHI's backends (L<File|CHI::Driver::File>,
-L<Memcached|CHI::Driver::Memcached>, L<DBI|CHI::Driver::DBI>, etc.) Simply pass
-a hashref of CHI parameters to tie:
+L<Memcached|CHI::Driver::Memcached>, L<DBI|CHI::Driver::DBI>, etc.)
+
+Usage is one of the following:
+
+    tie %cache, 'Tie::CHI', $hash_of_chi_options;
+    tie %cache, 'Tie::CHI', $existing_chi_cache;
 
 A read/write/delete on the tied hash will result in a C<get>/C<set>/C<remove>
-on the underlying cache. C<keys> will be supported if the underlying CHI driver
-supports C<get_keys> (e.g. File and DBI, not Memcached).
+on the underlying cache. C<keys> and C<each> will be supported if the
+underlying CHI driver supports C<get_keys>.
 
 There is no way to specify expiration for an individual C<set>, but you can
 pass C<expires_in>, C<expires_at> and/or C<expires_variance> to the tie to
